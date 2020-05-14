@@ -48,6 +48,7 @@ def fake_source(mev, mvp, coeff=None, thickness=0, method='normal'):
 
 	# add any additional metal filter
 	if coeff is not None:
-		source = source * np.exp(-coeff * thickness / 10)
+		c = -coeff * thickness / 10
+		source = source * np.exp(c.astype(float))
 
 	return source

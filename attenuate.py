@@ -19,8 +19,8 @@ def attenuate(original_energy, coeff, depth):
 		original_energy = original_energy.reshape((len(original_energy), 1))
 	elif original_energy.ndim != 2:
 		raise ValueError('input original_energy has more than two dimensions')
-	energies = original_energy.shape[0]
-	samples = original_energy.shape[1]
+	energies = original_energy.shape[0] #number of energies
+	samples = original_energy.shape[1]	#number or samples
 
 	# check coeff is vector of energies
 	if type(coeff) != np.ndarray:
@@ -39,5 +39,16 @@ def attenuate(original_energy, coeff, depth):
 		raise ValueError('input depth has different number of samples to input original_energy')
 
 	# Work out residual energy for each depth and at each energy
+	
+	# c = depth * (coeff * np.ones((energies,samples)).T).T
 
-	return original_energy
+	coeffMatrix = np.multiply( coeff, np.ones((energies,samples)).T).T
+
+	c = np.multiply(depth, coeffMatrix)
+	c = np.multiply(-1, c)
+	c = np.exp(c.astype(float))
+	
+	residual_energy = np.multiply(original_energy, c)
+	
+
+	return residual_energy
