@@ -2,6 +2,7 @@ import numpy as np
 import numpy.matlib
 import math
 
+
 def phantom(ellipses, n):
 	"""generates an artificial phantom given ellipse parameters and size n"""
 
@@ -50,6 +51,7 @@ def ct_phantom(names, n, type, metal=None):
 		6 - disc and other sphere
 		7 - pelvic fixation pins
 		8 - resolution phantom
+		9 - all air phantom
 
 		For types 1-2, the whole phantom is of type 'metal', which defaults
 		to 'Soft Tissue' if not given. This must match one of the material
@@ -93,6 +95,11 @@ def ct_phantom(names, n, type, metal=None):
 		# impulse for looking at resolution
 		x = np.zeros((n, n))
 		x[int(n / 2)][int(n / 2)] = tissue
+	elif type == 9:
+		
+		# impulse for looking at resolution
+		x = np.zeros((n, n))
+		x[int(n / 2)][int(n / 2)] = air
 		
 	elif type == 8:
 
