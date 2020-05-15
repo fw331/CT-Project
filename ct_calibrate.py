@@ -1,6 +1,8 @@
 import numpy as np
 import scipy
 from scipy import interpolate
+from ct_phantom import *
+from ct_scan import *
 
 def ct_calibrate(photons, material, sinogram, scale, correct=True):
 
@@ -13,7 +15,15 @@ def ct_calibrate(photons, material, sinogram, scale, correct=True):
 
 	# Get dimensions and work out detection for just air of twice the side
 	# length (has to be the same as in ct_scan.py)
+
 	n = sinogram.shape[1]
+	angles = sinogram.shape[0]
+
+	phantom_air = d = ct_phantom(material.name, n, 9) #added type, with the single point attenuator of tissue replaced with air
+
+	sinogram_air = ct_scan(photons, material, phantom_air, scale, angles)
+
+	sinogram = -np.log( np.divide(sinogram, sinogram_air))
 
 	# perform calibration
 
