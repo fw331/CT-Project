@@ -1,0 +1,153 @@
+
+# these are the imports you are likely to need
+import numpy as np
+from material import *
+from source import *
+from fake_source import *
+from ct_phantom import *
+from ct_lib import *
+from scan_and_reconstruct import *
+from create_dicom import *
+
+# create object instances
+material = Material()
+source = Source()
+
+# define each end-to-end test here, including comments
+# these are just some examples to get you started
+# all the output should be saved in a 'results' directory
+
+#First test: attenuation function
+
+
+def test_1():
+        #this is to check the attenuation function
+
+        #I will compare energies of photons for 100kVp, 2mm Al passed to the attentuation function
+        #attenuated with another 1mm of Al and compare it to the attentuation given for 3mmAl as a standard
+
+        my_attenuation = attenuate(source.photon('100kVp, 2mm Al'),material.coeff('Aluminium'), np.arange(0.1, 0.2, 0.1))
+
+        standard = source.photon('100kVp, 3mm Al')
+
+        error = standard - my_attenuation.reshape(1,-1)
+
+        #results seem very large for mid range energies which seems worrying, however
+
+        save_plot(error[0], 'results' , 'attentuation function test - error')
+
+        #now for error relative to baseline
+
+        relative_error = np.nan_to_num(error[0]/standard)
+
+        #it seems that errors are all below 1% of the respective intensity, and it is possible that this is purely down
+        #data being noisy?
+
+        save_plot(relative_error, 'results' , 'attentuation function test - relative error')
+
+        return relative_error
+
+#plotting source.mev on x axis and relative error on y axis shows that the relative error does not in an obvious
+#way depend on mev and so we can postulate the error is not a methodical one
+#from plt.plot(source.mev,relative_error)
+
+def test_2():
+        #this is to check explore relation between depth, attenuation and source energies
+
+        #first, a comparison between a standard source from data and ideal source at the same mvp; iron chosen as material arbitrarily
+        #we expect a straight line as according to the usual attenuation equation it proceeds with an exponential - latural log should reduce it to linear
+        #
+
+        plt.plot(np.arange(0,10.1,0.1), np.log(ct_detect(source.photon('100kVp, 1mm Al'),material.coeff('Iron'), np.arange(0,10.1,0.1), 1)), color='blue', label = '100mvp source, data')
+        plt.plot(np.arange(0,10.1,0.1), np.log(ct_detect(fake_source(source.mev,0.1,material.coeff('Aluminium'),0.1,method='ideal'),material.coeff('Iron'), np.arange(0,10.1,0.1), 1)), color='blue', label = '100mvp source, ideal', linestyle='--')
+
+        plt.plot(np.arange(0,10.1,0.1), np.log(ct_detect(source.photon('80kVp, 1mm Al'),material.coeff('Iron'), np.arange(0,10.1,0.1), 1)), color='orange', label = '80mvp source, data')
+        plt.plot(np.arange(0,10.1,0.1), np.log(ct_detect(fake_source(source.mev,0.08,material.coeff('Aluminium'),0.1,method='ideal'),material.coeff('Iron'), np.arange(0,10.1,0.1), 1)), color='orange', label = '80mvp source, ideal',linestyle='--')
+        plt.xlabel('Depth')
+        plt.ylabel('Log(detected intensity)')
+        plt.legend()
+        plt.show()
+
+        #we can see that attenuation differs for different idealised energies:
+        #again, low energies would likely pull the data intensity down, while presence of high energies would likely 
+        for peak in np.arange(0.01,0.16,0.02):
+                plt.plot(np.arange(0,10.1,1.0), np.log(ct_detect(fake_source(source.mev,peak,material.coeff('Aluminium'),0.1,method='ideal'),material.coeff('Iron'), np.arange(0,10.1,1.0), 1)), label = str(peak))
+
+        plt.legend()
+        plt.show()
+
+
+
+        #the results displayed show that at low depth there is less intensity detected than expected - presumably because the low energy from real data were filtered out first
+        #at more greater depths into the material there is less attenuation than expected, and this might be because high energy photons from the source pass through the material easier
+
+        #one can check this by artificially restricting 
+        band = np.append(np.append(np.zeros(85),source.photon('100kVp, 1mm Al')[85:90]),np.zeros(110))
+        plt.plot(np.arange(0,10.1,0.1), np.log(ct_detect(band,material.coeff('Iron'), np.arange(0,10.1,0.1), 1)), color='blue', label = '100mvp source, data')
+        plt.show()
+        #this shows that the behaviour when only some energies are present is much more linear, however the gradeitn is still shifted
+        #from the ideal as many energies contribute to the average attenuation accross energies
+
+
+def test_3():
+        #this is to compare how different mateirals attenuate idealised source energies
+        for material_ in material.name:
+                plt.plot(np.arange(0,10.1,1.0), np.log(ct_detect(fake_source(source.mev,0.1,material.coeff('Aluminium'),0.1,method='ideal'),material.coeff(material_), np.arange(0,10.1,1.0), 1)), label = str(material_))
+        plt.legend()
+        plt.show()
+
+## scipy.ndimage.map_coordinates interpolates by a spline of a given order
+
+
+        
+'''
+def test_1():
+	# explain what this test is for
+
+	# work out what the initial conditions should be
+	p = ct_phantom(material.name, 256, 3)
+	s = source.photon('100kVp, 3mm Al')
+	y = scan_and_reconstruct(s, material, p, 0.01, 256)
+
+	# save some meaningful results
+	save_draw(y, 'results', 'test_1_image')
+	save_draw(p, 'results', 'test_1_phantom')
+
+	# how to check whether these results are actually correct?
+
+def test_2():
+	# explain what this test is for
+
+	# work out what the initial conditions should be
+	p = ct_phantom(material.name, 256, 2)
+	s = source.photon('80kVp, 1mm Al')
+	y = scan_and_reconstruct(s, material, p, 0.01, 256)
+
+	# save some meaningful results
+	save_plot(y[128,:], 'results', 'test_2_plot')
+
+	# how to check whether these results are actually correct?
+
+def test_3():
+	# explain what this test is for
+
+	# work out what the initial conditions should be
+	p = ct_phantom(material.name, 256, 1)
+	s = fake_source(source.mev, 0.1, method='ideal')
+	y = scan_and_reconstruct(s, material, p, 0.1, 256)
+
+	# save some meaningful results
+	f = open('results/test_3_output.txt', mode='w')
+	f.write('Mean value is ' + str(np.mean(y[64:192, 64:192])))
+	f.close()
+
+	# how to check whether these results are actually correct?
+
+
+# Run the various tests
+print('Test 1')
+test_1()
+print('Test 2')
+test_2()
+print('Test 3')
+test_3()'''
