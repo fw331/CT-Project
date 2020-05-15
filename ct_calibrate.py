@@ -20,8 +20,7 @@ def ct_calibrate(photons, material, sinogram, scale, correct=True):
 	n = sinogram.shape[1]
 	angles = sinogram.shape[0]
 
-	#depth[air] = 2 * n - np.sum(depth, axis=0)
-
+	# define the different variables used
 	depth_air = np.zeros(sinogram.shape)
 	values = np.zeros((sinogram.shape))
 	dummy = np.ones((n, n))
@@ -40,15 +39,13 @@ def ct_calibrate(photons, material, sinogram, scale, correct=True):
 
 		depth = np.sum(interpolated, axis = 0)
 
-		depth_air[angle] = 2*n - depth
-		#depth_air[angle] = depth
+		depth_air[angle] = 2*n - depth # this is the depth of air!
 
 	for angle in range(angles):
 		for i in range(n):
 			values[angle][i] = ct_detect(photons, material.coeff('Air'), depth_air[angle][i])
-			#values = attenuate(photons, coeff, depth[angle][i])
 
-	
+	 # getting the linear attenuated sinogram as per the formula
 	sinogram_att = -np.log( np.divide(sinogram, values) )
 	sinogram = sinogram_att
 
